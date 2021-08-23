@@ -1,5 +1,6 @@
 const { Model, DataTypes } = require("sequelize");
 const sequelize = require("../config/connection");
+const bcrypt = require("bcrypt");
 
 //create our User model
 class User extends Model {}
@@ -21,33 +22,50 @@ User.init(
 
     //define a username column
     username: {
-        type: DataTypes.STRING,
-        allowNull: false,
+      type: DataTypes.STRING,
+      allowNull: false,
     },
 
     //definte an email column
     email: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        //there cannot be any duplicate email values in this table
-        unique: true,
-        //iff allowNull is set to false, we can run our data through validators before creating the table data
-        validate: {
-            isEmail: true
-        }
+      type: DataTypes.STRING,
+      allowNull: false,
+      //there cannot be any duplicate email values in this table
+      unique: true,
+      //iff allowNull is set to false, we can run our data through validators before creating the table data
+      validate: {
+        isEmail: true,
+      },
     },
 
     //define a password column
     password: {
-        type: DataTypes.STRING,
-        allowNull: false,
-        validate: {
-            //this means that password must be at least four characters long
-            len: [4]
-        }
-    }
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        //this means that password must be at least four characters long
+        len: [4],
+      },
+    },
   },
   {
+    hooks: {
+      //set up beforeCreate lifecycle "hook" functionality
+      async beforeCreate(newUserData) {
+        newUserData.password = await bcrypt.hash(newUserData.password, 10);
+        return newUserData;
+      },
+
+      //set up beforeUpdaate lifecycle "hook" functionality
+      async beforeUpdate(updateUserData) {
+        updateUserData.password = await bcrypt.hash(
+          updateUserData.password,
+          10
+        );
+        return updateUserData;
+      }
+    },
+
     //TABLE CONFIGURATION OPTIONS GO HERE ((https://sequelize.org/v5/manual/models-definition.html#configuration))
 
     // pass in our imported sequelize connection (the direct connection to our database)
